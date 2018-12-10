@@ -17,7 +17,7 @@
         </activity>
         <activity android:name=".ActivityTwo" />
 
-        <service android:name=".GPSService"/>
+        <service android:name=".GPSService" android:exported="false"/>
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />

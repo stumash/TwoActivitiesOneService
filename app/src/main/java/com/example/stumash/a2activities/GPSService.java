@@ -26,6 +26,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
 public class GPSService extends Service {
+    private volatile boolean alreadyStartedOnce = false;
+    private LocationListener ll;
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -34,106 +37,101 @@ public class GPSService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY;
-    }
-
-    @Override
-    public void onCreate() {
-
-        final boolean[] switchedActivityOnce = {false};
-
-        // sleep for 2 seconds
-        final long twoSecondsMillis = 2 * 1000;
-        try { Thread.sleep(twoSecondsMillis); }
-        catch (InterruptedException e) { }
+        if (alreadyStartedOnce) return START_STICKY;
+        alreadyStartedOnce = true;
 
         // set up a listener for gps
         LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        LocationListener ll = new LocationListener() {
+        ll = new LocationListener() {
             @Override
-            public void onLocationChanged(Location location) {
-                if (switchedActivityOnce[0]) return; // do nothing if already switched activity
+            public void onLocationChanged(Location location2) {
+                final Location location = location2;
 
-                try {
-                    double latitude = location.getLatitude();
-                    double longitude = location.getLongitude();
+                Thread t = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            // get lat lon radius
+                            double lat = location.getLatitude();
+                            double lon = location.getLongitude();
+                            int radius = 100; // TODO: radius = 8
+                            lat = 45.502239; // TODO: remove test values
+                            lon = -73.577248;
 
-                    boolean inRangeOfIntersection = false;
+                            // request intersection data
+                            String url =
+                                    "https://isasdev.cim.mcgill.ca:44343/autour/getPlaces.php"+
+                                    "?framed=1&times=1"+
+                                    "&radius="+radius+"&lat="+lat+"&lon="+lon+
+                                    "&condensed=0&from=osmxing&as=json&font=9&pad=0";
+                            HttpClient httpClient = new DefaultHttpClient();
+                            HttpRequest request = new HttpGet(url);
+                            HttpResponse response = httpClient.execute((HttpUriRequest) request);
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(
+                                response.getEntity().getContent()
+                            ));
 
-                    // get nearest intersections
-                    double radius = 100.0;
-                    double lat = 45.502239; // TODO: remove test values
-                    double lon = -73.577248;
-                    String url =
-                            "https://isasdev.cim.mcgill.ca:44343/autour/getPlaces.php"+
-                            "?framed=1&times=1"+
-                            "&radius="+radius+"&lat="+lat+"&lon="+lon+
-                            "&condensed=0&from=oxmxing&as=json&font=9&pad=0";
+                            // parse intersection data
+                            StringBuilder stringBuilder = new StringBuilder();
+                            String line = "";
+                            while ((line = reader.readLine()) != null) {
+                                stringBuilder.append(line);
+                            }
+                            String responseString = stringBuilder.toString();
 
-                    HttpClient httpClient = new DefaultHttpClient();
-                    HttpRequest request = new HttpGet(url);
-                    HttpResponse response = httpClient.execute((HttpUriRequest) request);
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(
-                        response.getEntity().getContent()
-                    ));
+                            Gson gson = new Gson();
+                            RequestResult rr = gson.fromJson(responseString, RequestResult.class);
+                            RequestResult.IntersectionData[] intersectionData = rr.results;
 
-                    StringBuilder stringBuilder = new StringBuilder();
-                    String line = "";
-                    while ((line = reader.readLine()) != null) {
-                        stringBuilder.append(line);
+                            // respond to contents of intersection data
+                            boolean inRangeOfIntersection = false;
+                            if (intersectionData.length > 0) {
+                                inRangeOfIntersection = true;
+                            }
+
+                            // if near an intersection and running MainActivity, switch to ActivityTwo
+                            // if not near an intersection and running ActivityTwo, switch to MainActivity
+                            String runningActivity = getApplicationContext().getSharedPreferences(Constants.PREFERENCES_NAME, MODE_MULTI_PROCESS)
+                                    .getString(Constants.ACTIVE_ACTIVITY, "defaultValue");
+                            if (inRangeOfIntersection && !runningActivity.equals(Constants.ACTIVITY_TWO)) {
+                                // start ActivityTwo.class
+                                Intent intent = new Intent(getApplicationContext(), ActivityTwo.class);
+                                startActivity(intent);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
-                    String responseString = stringBuilder.toString();
-
-                    Gson gson = new Gson();
-                    RequestResult rr = gson.fromJson(responseString, RequestResult.class);
-                    RequestResult.IntersectionData intersectionData = rr.results;
-                    if (intersectionData.ll.length > 0) { // if more than 0 lat-lon pairs found
-                        inRangeOfIntersection = true;
-                        switchedActivityOnce[0] = true;
-                    }
-
-                    if (!inRangeOfIntersection)
-                        return;
-
-                    // start ActivityTwo.class
-                    Intent intent = new Intent(getApplicationContext(), ActivityTwo.class);
-                    startActivity(intent);
-
-                } catch (Exception e) { }
+                });
+                t.start();
             }
-
             @Override
-            public void onStatusChanged(String s, int i, Bundle bundle) {
-            }
-
+            public void onStatusChanged(String s, int i, Bundle bundle) { }
             @Override
-            public void onProviderEnabled(String s) {
-            }
-
+            public void onProviderEnabled(String s) { }
             @Override
-            public void onProviderDisabled(String s) {
-            }
+            public void onProviderDisabled(String s) { }
         };
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) !=
-                PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) !=
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED) {
-            return;
-        } else {
             // request location updates from the gps provider every 1000 ms, even if travelled 0 distance
             lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, ll);
         }
+
+        return START_STICKY;
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        lm.removeUpdates(ll);
     }
 }
 
 class RequestResult {
-    IntersectionData results;
+    IntersectionData[] results;
     String[] footer;
 
     static class IntersectionData {
