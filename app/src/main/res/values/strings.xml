@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">2Activities</string>
+    <string name="this_is_activity_1">ACTIVITY 1</string>
+    <string name="to_activity_2">to activity 2</string>
+    <string name="activity_2">ACTIVITY 2</string>
+    <string name="back_to_activity_1">back to activity 1</string>
+    <string name="start_service">start service</string>
+    <string name="stop_service">stop service</string>
+</resources>
