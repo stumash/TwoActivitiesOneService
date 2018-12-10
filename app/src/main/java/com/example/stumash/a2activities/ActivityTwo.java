@@ -6,10 +6,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 
-/**
- * Created by stumash on 19/11/18.
- */
-
 public class ActivityTwo extends AppCompatActivity {
     @Override
     public void onCreate(Bundle savedInstance) {

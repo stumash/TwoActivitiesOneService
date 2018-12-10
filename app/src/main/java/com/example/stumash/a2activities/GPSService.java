@@ -5,12 +5,8 @@ import android.content.Intent;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
-/**
- * Created by stumash on 09/12/18.
- */
-
-public class GPSService extends Service {
-
+public class GPSService extends Service
+{
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
