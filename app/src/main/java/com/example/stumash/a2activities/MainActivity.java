@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
         button_startService.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                startService(new Intent(getApplicationContext(), GPSService.class));
             }
         });
     }

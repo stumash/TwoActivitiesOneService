@@ -16,12 +16,20 @@ public class ActivityTwo extends AppCompatActivity {
         super.onCreate(savedInstance);
         setContentView(R.layout.activity_two);
 
-        Button button_backToActivityOne = findViewById(R.id.button2);
-        button_backToActivityOne.setOnClickListener(new View.OnClickListener() {
+        Button button_toMainActivity = findViewById(R.id.button_toMainActivity);
+        button_toMainActivity.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(getApplicationContext(), MainActivity.class);
                 startActivity(intent);
+            }
+        });
+
+        Button button_stopService = findViewById(R.id.button_stopService);
+        button_stopService.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                stopService(new Intent(getApplicationContext(), GPSService.class));
             }
         });
     }
