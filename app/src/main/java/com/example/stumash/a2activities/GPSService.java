@@ -54,9 +54,13 @@ public class GPSService extends Service {
                             // get lat lon radius
                             double lat = location.getLatitude();
                             double lon = location.getLongitude();
-                            int radius = 100; // TODO: radius = 8
-                            lat = 45.502239; // TODO: remove test values
+                            int radius = 8;
+
+                            // TODO: remove test values
+                            lat = 45.502239;
                             lon = -73.577248;
+                            radius = 100;
+                            // TODO: remove test values
 
                             // request intersection data
                             String url =
