@@ -7,7 +7,7 @@ This app has two screens ('`Activities`' in the Android world), called `MainActi
   * `TO MAIN ACTIVITY` goes to the `MainActivity` activity/screen.
   * `STOP SERVICE` stop the `GPSService`.
 
-The `GPSService` is a background thread that continues to run even if the application is exited or destroyed!
+The `GPSService` is a background `Service` that continues to run even if the application is exited or destroyed!
 
 It uses the OpenStreetMap server at `isasdev.cim.mcgill.ca:44343/autour/getPlaces.php` to get the data on street intersections nearest to the user's current (latitude,longitude) coordinates.
 
